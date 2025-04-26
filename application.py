@@ -22,25 +22,24 @@ parser = argparse.ArgumentParser(
                 "to transfer file from client to server")
 param_group = parser.add_mutually_exclusive_group(required=True)
 param_group.add_argument('-s', '--server', dest="server", action="store_true",
-                         help="Specify that the application should run in server mode, mutually exclusive with client")
+                         help="Run the application in server mode, mutually exclusive with client")
 param_group.add_argument('-c', '--client', dest="server", action="store_false",
-                         help="Specify that the application should run in client mode, mutually exclusive with server")
+                         help="Run the application in client mode, mutually exclusive with server")
 parser.add_argument('-i', '--ip', dest="server_address", type=str, default="127.0.0.1",
-                    help="Specify the port that is going to be used/is used for the server. Default 127.0.0.1")
+                    help="IP address that is going to be used/is used for the server (default: 127.0.0.1)")
 parser.add_argument('-p', '--port', dest="port", type=range_check_int(1024, 65535), default=8088,
-                    help="Specify the port that is going to be used. Default 8088")
+                    help="Port that is going to be used (default: 8088)")
 parser.add_argument('-f', '--file', dest="file_name", type=str, default="",
                     help="Name of the file that is to be transferred from client to server, does nothing for server")
-parser.add_argument('-w', '--window', dest="sliding_window", type=range_check_int(1), default=3,
-                    help="Size of sliding window, does nothing for xxxxx")
+parser.add_argument('-w', '--window', dest="window", type=range_check_int(1), default=3,
+                    help="Size of the sender/receiver window for the client/server (default: 3)")
 parser.add_argument('-d', '--discard', dest="discard_packet", type=int, default=-1,
-                    help="Packet number of the packet that should be discarded, does nothing for xxxx. Default -1.")
+                    help="Packet seq number of the packet that should be discarded by server, "
+                         "does nothing for client (default: -1)")
 param = parser.parse_args()
 
 # TODO: c and s option, maybe enum og something similar
-#       Add description to the argument fields, help
 #       Maybe different default ip address
-#       Maybe change sliding window to just window
 #       default of d should be infinity, how do you do that? negative number?
 
 
