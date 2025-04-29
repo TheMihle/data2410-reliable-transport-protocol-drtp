@@ -100,6 +100,8 @@ def client(args):
     data = create_packet(1, 0, Flag.SYN, args.window)
     client_socket = socket(AF_INET, SOCK_DGRAM)
 
+    # TODO: Check if SYN connection establushment work as it should
+    #       What if one of the packets is dropped?
     print("Connection Establishment Phase:\n")
     client_socket.sendto(data, (args.server_address, args.port))
     client_socket.settimeout(0.4)
@@ -113,8 +115,26 @@ def client(args):
         sleep(0.2)
         client_socket.sendto(create_packet(0, seq_num, Flag.ACK, args.window), (args.server_address, args.port))
         print("ACK packet is sent")
+        print("Connection established\n")
     else:
         print("Received packet missing SYN or ACK flag")
+
+    # TODO: Send data packets
+
+    # TODO: Check if closing connection work as it should both server and cient
+    #       What if FIN ACK isnt recived?
+    # Closing the connection
+    print("\nConnection Teardown:\n")
+    client_socket.sendto(create_packet(0, seq_num, Flag.FIN, args.window), (args.server_address, args.port))
+    print("FIN packet is sent")
+
+    message = client_socket.recv(1000)
+    seq_num, ack_num, flags, window = read_packet(message)
+
+    if Flag.FIN | Flag.ACK in Flag(flags):
+        print("FIN ACK packet is received")
+        print("Connection closes")
+
 
     print("\nExiting client")
     sys.exit()
@@ -139,7 +159,7 @@ def server(args):
     if Flag.SYN in Flag(flags):
         print("SYN packet is received")
         sleep(0.2)
-        server_socket.sendto(create_packet(0, seq_num, Flag.ACK | Flag.SYN, args.window), (client_address, client_port))
+        server_socket.sendto(create_packet(0, seq_num, Flag.SYN | Flag.ACK, args.window), (client_address, client_port))
         print("SYN-ACK packet is sent")
 
     else:
@@ -147,13 +167,30 @@ def server(args):
 
     message, (client_address, client_port) = server_socket.recvfrom(1000)
     seq_num, ack_num, flags, window = read_packet(message)
-    server_socket.settimeout(0.4)
 
     if Flag.ACK in Flag(flags):
         print("ACK packet is received")
+        print("Connection Established\n")
         sleep(0.2)
     else:
         print("Received packet missing ACK flag")
+
+    # Checks if connection is ready to close. Responds with FIN ACK if so then closes. Otherwise, treats the data
+    while True:
+        message, (client_address, client_port) = server_socket.recvfrom(1000)
+        seq_num, ack_num, flags, window = read_packet(message)
+
+        if flags == 0:
+            print("Data packet received")
+        elif Flag.FIN in Flag(flags):
+            print("\nFIN packet is received")
+            server_socket.sendto(create_packet(0, seq_num, Flag.FIN | Flag.ACK, args.window), (client_address, client_port))
+            print("FIN-ACK packet is sent")
+            server_socket.close()
+
+            print("\nCalculated throughput that haven't been calculated yet")
+            print("Connection Closes")
+            break
 
     print("\nExiting server")
     sys.exit()
