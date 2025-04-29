@@ -8,15 +8,15 @@ from time import sleep
 
 
 # Argument parsing
-# Custom type for parser to
-# Can not have max limit
+# Custom type for parser, range check with int
 def range_check_int(min_int, max_int=None):
     """
     Custom type for argparse. Checks if input value is and int, and if its between
-    the minimum int provided.
-    :param min_int: Minimum allowed value
+    the minimum and optional maximum int provided.
+    :param min_int: Minimum allowed value.
     :param max_int: Maximum allowed value. If not provided, no maximum value.
-    :return:
+    :returns: function that returns the valid int.
+    :raises argparse ArgumentTypeError: If value is out of range or not an int.
     """
     def range_check(value):
         try:
@@ -69,6 +69,8 @@ def get_arguments():
 class Flag(IntFlag):
     """
     Flags for the header of the DRTP protocol
+    Reset, ACK, SYN, FIN
+    Syntax for multiple flags: Flag.ACK | Flag.SYN
     """
     RESET = 1
     ACK = 2
@@ -84,13 +86,17 @@ def create_packet(seq_num, ack_num, flags, window):
     return packet2
 
 
-def read_packet(packet):
+def read_packet(packet) -> tuple:
     header_format = "!HHHH"
     packet = unpack(header_format, packet[:8])       # Reads only the header
     return packet[0], packet[1], packet[2], packet[3]
 
 
 def client(args):
+    """
+    Runs the client part of the application
+    :param args:
+    """
     data = create_packet(1, 0, Flag.SYN, args.window)
     client_socket = socket(AF_INET, SOCK_DGRAM)
 
@@ -115,6 +121,10 @@ def client(args):
 
 
 def server(args):
+    """
+    Runs the server part of the application
+    :param args:
+    """
     server_socket = socket(AF_INET, SOCK_DGRAM)
     try:
         server_socket.bind(('', args.port))
@@ -160,7 +170,7 @@ def main():
         elif args.client:
             client(args)
     except KeyboardInterrupt:
-        print("Exiting from Keyboard Interupt")
+        print("Exiting from Keyboard Interrupt")
         sys.exit()
 
 
