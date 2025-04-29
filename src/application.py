@@ -4,6 +4,7 @@ from datetime import datetime
 from enum import IntFlag
 from socket import *
 from struct import pack, unpack
+from time import sleep
 
 
 # Argument parsing
@@ -63,6 +64,7 @@ def get_arguments():
 
 # TODO: Rest of the code
 # TODO: check if you should more than one file
+# TODO: Check the ports, should be the same on both sides when on mininet? have to bind first on client side too
 
 class Flag(IntFlag):
     """
@@ -89,9 +91,27 @@ def read_packet(packet):
 
 
 def client(args):
-    data = create_packet(1, 0, Flag.ACK, args.window)
+    data = create_packet(1, 0, Flag.SYN, args.window)
     client_socket = socket(AF_INET, SOCK_DGRAM)
+
+    print("Connection Establishment Phase:\n")
     client_socket.sendto(data, (args.server_address, args.port))
+    client_socket.settimeout(0.4)
+    print("SYN packet is sent")
+
+    message = client_socket.recv(1000)
+    seq_num, ack_num, flags, window = read_packet(message)
+
+    if Flag.SYN | Flag.ACK in Flag(flags):
+        print("SYN-ACK packet is received")
+        sleep(0.2)
+        client_socket.sendto(create_packet(0, seq_num, Flag.ACK, args.window), (args.server_address, args.port))
+        print("ACK packet is sent")
+    else:
+        print("Received packet missing SYN or ACK flag")
+
+    print("\nExiting client")
+    sys.exit()
 
 
 def server(args):
@@ -102,20 +122,46 @@ def server(args):
         print(f'Binding failed with port {args.port}, Error: {e}')
         sys.exit()
 
-    while True:
-        message, client_address = server_socket.recvfrom(1000)
-        print(message)
+    message, (client_address, client_port) = server_socket.recvfrom(1000)
+    seq_num, ack_num, flags, window = read_packet(message)
+    server_socket.settimeout(0.4)
+
+    if Flag.SYN in Flag(flags):
+        print("SYN packet is received")
+        sleep(0.2)
+        server_socket.sendto(create_packet(0, seq_num, Flag.ACK | Flag.SYN, args.window), (client_address, client_port))
+        print("SYN-ACK packet is sent")
+
+    else:
+        print("Received packet missing SYN flag")
+
+    message, (client_address, client_port) = server_socket.recvfrom(1000)
+    seq_num, ack_num, flags, window = read_packet(message)
+    server_socket.settimeout(0.4)
+
+    if Flag.ACK in Flag(flags):
+        print("ACK packet is received")
+        sleep(0.2)
+    else:
+        print("Received packet missing ACK flag")
+
+    print("\nExiting server")
+    sys.exit()
 
 
 def main():
     """
     Activates the server or client based on the input arguments
     """
-    args = get_arguments()
-    if args.server:
-        server(args)
-    elif args.client:
-        client(args)
+    try:
+        args = get_arguments()
+        if args.server:
+            server(args)
+        elif args.client:
+            client(args)
+    except KeyboardInterrupt:
+        print("Exiting from Keyboard Interupt")
+        sys.exit()
 
 
 if __name__ == "__main__":
