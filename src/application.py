@@ -88,7 +88,7 @@ def create_packet(seq_num, ack_num, flags, window):
 
 def read_packet(packet) -> tuple:
     header_format = "!HHHH"
-    packet = unpack(header_format, packet[:8])       # Reads only the header
+    packet = unpack(header_format, packet[:8])  # Reads only the header
     return packet[0], packet[1], packet[2], packet[3]
 
 
@@ -113,19 +113,36 @@ def client(args):
     if Flag.SYN | Flag.ACK in Flag(flags):
         print("SYN-ACK packet is received")
         sleep(0.2)
-        client_socket.sendto(create_packet(0, seq_num, Flag.ACK, args.window), (args.server_address, args.port))
+        client_socket.sendto(create_packet(0, ack_num, Flag.ACK, args.window), (args.server_address, args.port))
         print("ACK packet is sent")
         print("Connection established\n")
     else:
         print("Received packet missing SYN or ACK flag")
 
-    # TODO: Send data packets
+    # TODO: Send data packets, just testing currently
+
+    while seq_num < 5:
+        seq_num += 1
+        client_socket.sendto(create_packet(seq_num, ack_num, 0, args.window), (args.server_address, args.port))
+        print(
+            f"{datetime.now().strftime("%H:%M:%S.%f")} -- packet with seq = {seq_num} is sent, sliding window = XXXXXX")
+
+        message = client_socket.recv(1000)
+        seq_num, ack_num, flags, window = read_packet(message)
+
+        if Flag.ACK in Flag(flags):
+            print(f"Packet with seq = {seq_num} recived")
+
+        else:
+            print(f"Error, packet with seq_num {seq_num} may have been lost")
+
+        sleep(0.2)
 
     # TODO: Check if closing connection work as it should both server and cient
     #       What if FIN ACK isnt recived?
     # Closing the connection
     print("\nConnection Teardown:\n")
-    client_socket.sendto(create_packet(0, seq_num, Flag.FIN, args.window), (args.server_address, args.port))
+    client_socket.sendto(create_packet(0, ack_num, Flag.FIN, args.window), (args.server_address, args.port))
     print("FIN packet is sent")
 
     message = client_socket.recv(1000)
@@ -134,7 +151,6 @@ def client(args):
     if Flag.FIN | Flag.ACK in Flag(flags):
         print("FIN ACK packet is received")
         print("Connection closes")
-
 
     print("\nExiting client")
     sys.exit()
@@ -149,7 +165,7 @@ def server(args):
     try:
         server_socket.bind(('', args.port))
     except OSError as e:
-        print(f'Binding failed with port {args.port}, Error: {e}')
+        print(f"Binding failed with port {args.port}, Error: {e}")
         sys.exit()
 
     message, (client_address, client_port) = server_socket.recvfrom(1000)
@@ -159,7 +175,7 @@ def server(args):
     if Flag.SYN in Flag(flags):
         print("SYN packet is received")
         sleep(0.2)
-        server_socket.sendto(create_packet(0, seq_num, Flag.SYN | Flag.ACK, args.window), (client_address, client_port))
+        server_socket.sendto(create_packet(0, ack_num, Flag.SYN | Flag.ACK, args.window), (client_address, client_port))
         print("SYN-ACK packet is sent")
 
     else:
@@ -181,10 +197,15 @@ def server(args):
         seq_num, ack_num, flags, window = read_packet(message)
 
         if flags == 0:
-            print("Data packet received")
+            print(f"{datetime.now().strftime("%H:%M:%S.%f")} -- packet {seq_num} is received")
+            sleep(0)
+            server_socket.sendto(create_packet(seq_num, ack_num, Flag.ACK, args.window), (client_address, client_port))
+            print(f"ACK for packet with seq = {seq_num} sent")
+
         elif Flag.FIN in Flag(flags):
             print("\nFIN packet is received")
-            server_socket.sendto(create_packet(0, seq_num, Flag.FIN | Flag.ACK, args.window), (client_address, client_port))
+            server_socket.sendto(create_packet(0, ack_num, Flag.FIN | Flag.ACK, args.window),
+                                 (client_address, client_port))
             print("FIN-ACK packet is sent")
             server_socket.close()
 
@@ -218,4 +239,3 @@ if __name__ == "__main__":
 
     #print(read_packet(create_packet(1, 1, Flag.ACK | Flag.SYN, 1)))
     # print(datetime.now().strftime("%H:%M:%S.%f"))
-
