@@ -6,25 +6,26 @@ from time import sleep
 
 # Constants
 RECEIVER_WINDOW = 15
-# TODO: Check if how you should do this constant
+TIMEOUT = 0.4
+# TODO: Check if how you should do this constant, bad practice to not have input in to funcion??
 
 
-def establish_connection(server_socket, server_address, port, window):
+def establish_connection(server_socket, window):
     message, (client_address, client_port) = server_socket.recvfrom(1000)
-    seq_num, ack_num, flags, window = read_packet(message)
-    server_socket.settimeout(0.4)
+    _seq_num, _ack_num, flags, _window, _data = parse_packet(message)
+    server_socket.settimeout(TIMEOUT)
 
     if Flag.SYN in Flag(flags):
         print("SYN packet is received")
         sleep(0.2)
-        server_socket.sendto(create_packet(0, ack_num, Flag.SYN | Flag.ACK, window), (client_address, client_port))
+        server_socket.sendto(create_packet(0, 0, Flag.SYN | Flag.ACK, window), (client_address, client_port))
         print("SYN-ACK packet is sent")
 
     else:
         print("Received packet missing SYN flag")
 
     message, (client_address, client_port) = server_socket.recvfrom(1000)
-    seq_num, ack_num, flags, window = read_packet(message)
+    _seq_num, _ack_num, flags, _window, _data = parse_packet(message)
 
     if Flag.ACK in Flag(flags):
         print("ACK packet is received")
@@ -32,7 +33,6 @@ def establish_connection(server_socket, server_address, port, window):
     else:
         print("Received packet missing ACK flag")
 
-    return seq_num, ack_num, window
 
 def server(server_address, port, discard_packet):
     """
@@ -48,12 +48,12 @@ def server(server_address, port, discard_packet):
         print(f"Binding failed with port {port}, Error: {e}")
         sys.exit()
 
-    seq_num, ack_num, window = establish_connection(server_socket, server_address, port, RECEIVER_WINDOW)
+    establish_connection(server_socket, RECEIVER_WINDOW)
 
     # Checks if the connection is ready to close. Responds with FIN ACK if so, then closes. Otherwise, treats the data
     while True:
         message, (client_address, client_port) = server_socket.recvfrom(1000)
-        seq_num, ack_num, flags, window = read_packet(message)
+        seq_num, ack_num, flags, _window, data = parse_packet(message)
 
         if flags == 0:
             print(f"{datetime.now().strftime("%H:%M:%S.%f")} -- packet {seq_num} is received")
@@ -63,7 +63,7 @@ def server(server_address, port, discard_packet):
 
         elif Flag.FIN in Flag(flags):
             print("\nFIN packet is received")
-            server_socket.sendto(create_packet(0, ack_num, Flag.FIN | Flag.ACK, 0),
+            server_socket.sendto(create_packet(0, 0, Flag.FIN | Flag.ACK, 0),
                                  (client_address, client_port))
             print("FIN-ACK packet is sent")
             server_socket.close()

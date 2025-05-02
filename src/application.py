@@ -51,7 +51,7 @@ def get_arguments():
     Parses the input arguments for the application.
     See argument help for specifics about each argument.
     Checks if arguments are valid and notifies if they are ignored.
-    :return: Argument object with parsed arguments.
+    :returns: Argument object with parsed arguments.
     """
     parser = argparse.ArgumentParser(
         description="Application for DRTP Reliable Transfer Protocol. Can be run as server or client "
