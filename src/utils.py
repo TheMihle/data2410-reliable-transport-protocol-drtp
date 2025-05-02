@@ -22,7 +22,7 @@ def create_packet(seq_num, ack_num, flags, window, data=None):
     :param flags: The flags the packet should have, e.g. Flag.ACK | Flag.SYN
     :param window:
     :param data: The data that should be sent in the packet, if not provided,
-                the packet will be empty
+                the packet will be empty. Must be in bytes.
     """
     header_format = "!HHHH"
 
@@ -35,7 +35,7 @@ def read_packet(packet) -> tuple:
     """
 
     :param packet: the packet that should be parsed
-    :returns: tuple with seq_num, ack_num, flags, window
+    :return: tuple with seq_num, ack_num, flags, window
     """
     header_format = "!HHHH"
     packet = unpack(header_format, packet[:8])  # Reads only the header
