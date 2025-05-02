@@ -16,24 +16,26 @@ class Flag(IntFlag):
 
 def create_packet(seq_num, ack_num, flags, window, data=None):
     """
-
+    Creates a packet based on the input parameters
     :param seq_num: Seq number of the packet
     :param ack_num: Seq number of the packet that should be ACKed
     :param flags: The flags the packet should have, e.g. Flag.ACK | Flag.SYN
-    :param window:
+    :param window: Receiver window size
     :param data: The data that should be sent in the packet, if not provided,
                 the packet will be empty. Must be in bytes.
     """
     header_format = "!HHHH"
 
-    header = pack(header_format, seq_num, ack_num, flags, window)
-    packet2 = header
-    return packet2
+    packet = pack(header_format, seq_num, ack_num, flags, window)
+
+    if data is not None:
+        packet += data
+    return packet
 
 
 def read_packet(packet) -> tuple:
     """
-
+    Reads the packet and returns the header information
     :param packet: the packet that should be parsed
     :return: tuple with seq_num, ack_num, flags, window
     """
