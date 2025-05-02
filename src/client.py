@@ -46,7 +46,7 @@ def send_data(client_socket, server_address, port,  seq_num, ack_num, window):
         else:
             print(f"Error, packet with seq_num {seq_num} may have been lost")
 
-        sleep(0.2)
+        sleep(0.3)
 
     return seq_num, ack_num, window
 

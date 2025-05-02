@@ -29,7 +29,6 @@ def establish_connection(server_socket, server_address, port, window):
     if Flag.ACK in Flag(flags):
         print("ACK packet is received")
         print("Connection Established\n")
-        sleep(0.3)
     else:
         print("Received packet missing ACK flag")
 
