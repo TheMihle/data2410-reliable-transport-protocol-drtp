@@ -6,3 +6,6 @@
 
 ### VS Code ###
 .vscode/
+
+### Other stuff ###
+*.jpg
