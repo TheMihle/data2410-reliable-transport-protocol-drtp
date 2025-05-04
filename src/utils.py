@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import IntFlag
 from struct import pack, unpack, calcsize
 
@@ -92,3 +93,12 @@ def parse_packet(packet) -> tuple:
     data = packet[header_size:]
     packet = unpack(header_format, packet[:header_size])
     return *packet, data
+
+
+def time_now_log():
+    """
+    Creates a string with current time formatted as "HH:MM:SS.mmmmmm --"
+    ready to specify time in a log.
+    :return: Current time formatted in a string.
+    """
+    return f"{datetime.now().strftime("%H:%M:%S.%f")} --"

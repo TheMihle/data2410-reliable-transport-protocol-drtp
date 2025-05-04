@@ -1,13 +1,13 @@
 import sys
 from socket import *
 from utils import *
-from datetime import datetime
 from time import sleep
 
 # Constants
 RECEIVER_WINDOW = 15
-TIMEOUT = 0.4
-# TODO: Check if how you should do this constant, bad practice to not have input in to funcion??
+# TODO: HIGHER TIMEOUT THAN 0.4 TO MAKE IT NOT TIME OUT WITH PACKET LOST
+TIMEOUT = 0.5
+# TODO: Check if how you should do this constant, bad practice to not have input in to function??
 
 
 def establish_connection(server_socket, window):
@@ -48,29 +48,42 @@ def server(server_address, port, discard_packet):
         print(f"Binding failed with port {port}, Error: {e}")
         sys.exit()
 
-    establish_connection(server_socket, RECEIVER_WINDOW)
-
-    # Checks if the connection is ready to close. Responds with FIN ACK if so, then closes. Otherwise, treats the data
+    # TODO: Should it be ready to wait for a new one after one closes?
     while True:
-        message, (client_address, client_port) = server_socket.recvfrom(1000)
-        seq_num, ack_num, flags, _window, data = parse_packet(message)
+        establish_connection(server_socket, RECEIVER_WINDOW)
 
-        if flags == 0:
-            print(f"{datetime.now().strftime("%H:%M:%S.%f")} -- packet {seq_num} is received")
-            sleep(0.3)
-            server_socket.sendto(create_packet(seq_num, ack_num, Flag.ACK, 0), (client_address, client_port))
-            print(f"{datetime.now().strftime("%H:%M:%S.%f")} -- ACK for packet with seq = {seq_num} sent")
+        # Checks if the connection is ready to close. Responds with FIN ACK if so, then closes. Otherwise, treats the data
+        while True:
+            next_seq_num = 1
+            message, (client_address, client_port) = server_socket.recvfrom(1000)
+            seq_num, ack_num, flags, _window, data = parse_packet(message)
 
-        elif Flag.FIN in Flag(flags):
-            print("\nFIN packet is received")
-            server_socket.sendto(create_packet(0, 0, Flag.FIN | Flag.ACK, 0),
-                                 (client_address, client_port))
-            print("FIN-ACK packet is sent")
-            server_socket.close()
+            if flags == 0:
+                # Ignores the packet once if the sequence number matches the one that should be discarded
+                if seq_num == discard_packet:
+                    discard_packet = -1
+                    continue
 
-            print("\nCalculated throughput that haven't been calculated yet")
-            print("Connection Closed")
-            break
+                if seq_num != next_seq_num:
+                    print(f"{time_now_log()} packet {seq_num} is received")
+                sleep(0.05)
+                server_socket.sendto(create_packet(seq_num, ack_num, Flag.ACK, 0), (client_address, client_port))
+                print(f"{time_now_log()} ACK for packet with seq = {seq_num} sent")
 
+            elif Flag.FIN in Flag(flags):
+                print("\nFIN packet is received")
+                sleep(0.2)
+                server_socket.sendto(create_packet(0, 0, Flag.FIN | Flag.ACK, 0),
+                                     (client_address, client_port))
+                print("FIN-ACK packet is sent")
+
+                # Sets timeout so it can listen for a new connection without error
+                server_socket.settimeout(None)
+                print("\nCalculated throughput that haven't been calculated yet")
+                print("Connection Closed\n")
+                break
+
+    # TODO: Should socket be closed every time a connection is finished?
+    server_socket.close()
     print("\nExiting server")
     sys.exit()

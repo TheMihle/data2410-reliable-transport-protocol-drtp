@@ -1,7 +1,6 @@
 import sys
 from socket import *
 from utils import *
-from datetime import datetime
 from time import sleep
 
 # Constants
@@ -21,7 +20,7 @@ def establish_connection(client_socket, server_address, port):
 
     if Flag.SYN | Flag.ACK in Flag(flags):
         print("SYN-ACK packet is received")
-        sleep(0.3)
+        sleep(0.2)
         client_socket.sendto(create_packet(0, 0, Flag.ACK, 0), (server_address, port))
         print("ACK packet is sent")
         print("Connection established\n")
@@ -30,26 +29,33 @@ def establish_connection(client_socket, server_address, port):
     return window
 
 
-def send_data(client_socket, server_address, port,  seq_num, sender_window, reciever_window):
+def send_data(client_socket, server_address, port, seq_num, sender_window, receiver_window):
     # TODO: Send data packets, just testing currently
+    # TODO: use the window
+    window = min(sender_window, receiver_window)
 
-    while seq_num < 5:
-        seq_num += 1
-        client_socket.sendto(create_packet(seq_num, 0, 0, 0), (server_address, port))
-        print(
-            f"{datetime.now().strftime("%H:%M:%S.%f")} -- packet with seq = {seq_num} is sent, sliding window = XXXXXX")
+    while seq_num < 100:
+        try:
+            client_socket.sendto(create_packet(seq_num, 0, 0, 0), (server_address, port))
+            print(
+                f"{time_now_log()} packet with seq = {seq_num} is sent, sliding window = XXXXXX")
 
-        # TODO: Like this or one line?
-        packet = client_socket.recv(1000)
-        seq_num, ack_num, flags, _window, data = parse_packet(packet)
+            # TODO: Like this or one line?
+            packet = client_socket.recv(1000)
+            _seq_num, ack_num, flags, _window, data = parse_packet(packet)
 
-        if Flag.ACK in Flag(flags):
-            print(f"{datetime.now().strftime("%H:%M:%S.%f")} -- ACK packet with seq = {seq_num} received")
+            if Flag.ACK in Flag(flags):
+                seq_num += 1
+                print(f"{time_now_log()} ACK packet with seq = {seq_num} received")
 
-        else:
-            print(f"Error, packet with seq_num {seq_num} may have been lost")
+            else:
+                print(f"Error, packet with seq_num {seq_num} may have been lost")
+        except timeout:
+            print(f"{time_now_log()} RTO occurred")
+            continue
+        #  TODO: Retransmission should have different log message
 
-        sleep(0.3)
+        sleep(0.05)
 
 
 
@@ -79,9 +85,9 @@ def client(server_address, port, sender_window, file_name):
 
     client_socket = socket(AF_INET, SOCK_DGRAM)
 
-    reciever_window = establish_connection(client_socket, server_address, port)
+    receiver_window = establish_connection(client_socket, server_address, port)
 
-    send_data(client_socket, server_address, port, 1, reciever_window, sender_window)
+    send_data(client_socket, server_address, port, 1, receiver_window, sender_window)
 
     close_connection(client_socket, server_address, port)
 
