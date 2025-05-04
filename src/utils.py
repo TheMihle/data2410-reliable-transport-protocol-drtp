@@ -42,7 +42,7 @@ class FileHandler:
             self.file = open(self.file_name, "rb")
 
         self.file.seek(position)
-        return self.file.read()
+        return self.file.read(segment_size)
 
     def write_to_file(self, data):
         """

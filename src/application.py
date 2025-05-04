@@ -95,6 +95,7 @@ def get_arguments():
 # TODO: check if you should use classes for server and client
 # TODO: Should fin and fin ack have sequence numbers
 # TODO: Rest of the code
+# TODO: Should fin and fin ack have sequence numbers
 
 
 def main():

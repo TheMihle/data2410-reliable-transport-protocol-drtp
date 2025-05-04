@@ -52,11 +52,12 @@ def server(server_address, port, discard_packet):
     while True:
         establish_connection(server_socket, RECEIVER_WINDOW)
 
+        next_seq_num = 1
+        file_handler = FileHandler("test2.txt")
         # Checks if the connection is ready to close. Responds with FIN ACK if so, then closes. Otherwise, treats the data
         while True:
-            next_seq_num = 1
             message, (client_address, client_port) = server_socket.recvfrom(1000)
-            seq_num, ack_num, flags, _window, data = parse_packet(message)
+            seq_num, _ack_num, flags, _window, data = parse_packet(message)
 
             if flags == 0:
                 # Ignores the packet once if the sequence number matches the one that should be discarded
@@ -64,11 +65,16 @@ def server(server_address, port, discard_packet):
                     discard_packet = -1
                     continue
 
-                if seq_num != next_seq_num:
-                    print(f"{time_now_log()} packet {seq_num} is received")
-                sleep(0.05)
-                server_socket.sendto(create_packet(seq_num, ack_num, Flag.ACK, 0), (client_address, client_port))
-                print(f"{time_now_log()} ACK for packet with seq = {seq_num} sent")
+                if seq_num == next_seq_num:
+                    print(f"{time_now_log()} packet = {seq_num} is received")
+                    file_handler.write_to_file(data)
+                    next_seq_num += + 1
+                    sleep(0.05)
+                    server_socket.sendto(create_packet(0, seq_num, Flag.ACK, 0), (client_address, client_port))
+                    print(f"{time_now_log()} ACK for packet = {seq_num} sent")
+                else:
+                    print(f"{time_now_log()} out-of-order packet {seq_num} is received")
+
 
             elif Flag.FIN in Flag(flags):
                 print("\nFIN packet is received")
@@ -82,7 +88,7 @@ def server(server_address, port, discard_packet):
                 print("\nCalculated throughput that haven't been calculated yet")
                 print("Connection Closed\n")
                 break
-
+        file_handler.close_file() # TODO: Maybe mobe to another place
     # TODO: Should socket be closed every time a connection is finished?
     server_socket.close()
     print("\nExiting server")

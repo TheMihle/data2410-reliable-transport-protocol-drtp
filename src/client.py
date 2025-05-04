@@ -28,25 +28,31 @@ def establish_connection(client_socket, server_address, port):
         print("Received packet missing SYN or ACK flag")
     return window
 
-
-def send_data(client_socket, server_address, port, seq_num, sender_window, receiver_window):
+# TODO: Maybe let server address port be a tuple?
+def send_data(client_socket, server_address, port, seq_num, sender_window, receiver_window, file_name):
     # TODO: Send data packets, just testing currently
     # TODO: use the window
     window = min(sender_window, receiver_window)
 
-    while seq_num < 100:
+    file_handler = FileHandler(file_name)
+    data = file_handler.get_file_data(1, 992)
+
+    while True:
         try:
-            client_socket.sendto(create_packet(seq_num, 0, 0, 0), (server_address, port))
+            client_socket.sendto(create_packet(seq_num, 0, 0, 0, data), (server_address, port))
             print(
-                f"{time_now_log()} packet with seq = {seq_num} is sent, sliding window = XXXXXX")
+                f"{time_now_log()} packet with seq = {seq_num} is sent, sliding window = {"XXXXXX"}")
 
             # TODO: Like this or one line?
             packet = client_socket.recv(1000)
             _seq_num, ack_num, flags, _window, data = parse_packet(packet)
 
-            if Flag.ACK in Flag(flags):
+            # TODO: ACK NUM WRONG WHEN PACKET IS LOST
+            if Flag.ACK in Flag(flags) and ack_num == seq_num:
                 seq_num += 1
-                print(f"{time_now_log()} ACK packet with seq = {seq_num} received")
+                print(f"{time_now_log()} ACK for packet = {ack_num} is received")
+                data = file_handler.get_file_data(seq_num, 992)
+                if data == b"": break
 
             else:
                 print(f"Error, packet with seq_num {seq_num} may have been lost")
@@ -56,6 +62,7 @@ def send_data(client_socket, server_address, port, seq_num, sender_window, recei
         #  TODO: Retransmission should have different log message
 
         sleep(0.05)
+    file_handler.close_file()
 
 
 
@@ -87,7 +94,8 @@ def client(server_address, port, sender_window, file_name):
 
     receiver_window = establish_connection(client_socket, server_address, port)
 
-    send_data(client_socket, server_address, port, 1, receiver_window, sender_window)
+    # TODO: Maybe specifying start sequence number is not needed
+    send_data(client_socket, server_address, port, 1, receiver_window, sender_window, file_name)
 
     close_connection(client_socket, server_address, port)
 
