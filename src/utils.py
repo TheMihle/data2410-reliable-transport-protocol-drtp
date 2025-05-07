@@ -18,7 +18,7 @@ class Flag(IntFlag):
 class FileHandler:
     """
     Handles file operations, for example, opening, reading, writing and closing
-    in binary mode. File stays open until closed.
+    in binary mode. The File stays open until closed.
 
     Has methods for reading from a file based on segment number and size and
     for writing to the end of a file.
@@ -27,6 +27,7 @@ class FileHandler:
         self.file_name = file_name
         self.file = None
 
+    # TODO: Maybe et segment size at construction?
     def get_file_data(self, segment_num, segment_size):
         """
         Gets the file data with a specified size and number.
@@ -46,8 +47,8 @@ class FileHandler:
 
     def write_to_file(self, data):
         """
-        Writes to the end of the file
-        :param data: Written to the end of the file
+        Writes to the end of the file.
+        :param data: Written to the end of the file.
         """
         if self.file is None:
             self.file = open(self.file_name, "ab")
@@ -65,7 +66,7 @@ class FileHandler:
 
 def create_packet(seq_num, ack_num, flags, window, data=None):
     """
-    Creates a packet based on the input parameters
+    Creates a packet based on the input parameters.
     :param seq_num: Seq number of the packet
     :param ack_num: Seq number of the packet that should be ACKed
     :param flags: The flags the packet should have, e.g. Flag.ACK | Flag.SYN
