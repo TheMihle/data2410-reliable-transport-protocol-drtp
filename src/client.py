@@ -38,6 +38,13 @@ def establish_connection(client_socket, server_address):
     return window
 
 
+def send_window(client_socket, server_address, window, file_handler, retransmission=False):
+    if retransmission: ret = "retransmitting "
+    else: ret = ""
+    for seq_num in window:
+        client_socket.sendto(create_packet(seq_num, 0, 0, 0, file_handler.get_file_data(1, 992)), server_address)
+        print(f"{time_now_log()} {ret}packet with seq = {seq_num} is sent, sliding window = {window}")
+
 def send_data(client_socket, server_address, seq_num, sender_window, receiver_window, file_name):
     """
     Sends the file to the receiver using the Go-Back-N strategy. Uses the smallest sliding window
@@ -52,7 +59,7 @@ def send_data(client_socket, server_address, seq_num, sender_window, receiver_wi
     """
     # TODO: Send data packets, just testing currently
     # TODO: use the window
-    window = min(sender_window, receiver_window)
+    window_size = min(sender_window, receiver_window)
 
     file_handler = FileHandler(file_name)
     data = file_handler.get_file_data(1, 992)
