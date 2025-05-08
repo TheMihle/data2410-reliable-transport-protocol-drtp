@@ -39,11 +39,24 @@ def establish_connection(client_socket, server_address):
 
 
 def send_window(client_socket, server_address, window, file_handler, retransmission=False):
-    if retransmission: ret = "retransmitting "
-    else: ret = ""
+    """
+    Sends all packets in the specified window. Can specify if its retransmission or not,
+    makes a different console message.
+    :param client_socket: Socket of the client.
+    :param server_address: Address of the server to establish connection with.
+            Tuple with (ip, port).
+    :param window: Window of packets that should be sent. List with sequence numbers.
+    :param file_handler: File handler for the file that is written tp.
+    :param retransmission: Boolean True if it's a retransmission.
+    """
+    if retransmission: tran_type = "retransmitted"
+    else:  tran_type = "sent"
+    sent_window = []
     for seq_num in window:
         client_socket.sendto(create_packet(seq_num, 0, 0, 0, file_handler.get_file_data(1, 992)), server_address)
-        print(f"{time_now_log()} {ret}packet with seq = {seq_num} is sent, sliding window = {window}")
+        sent_window.append(seq_num)
+        print(f"{time_now_log()} packet with seq = {seq_num} is {tran_type}, sliding window = {sent_window}")
+
 
 def send_data(client_socket, server_address, seq_num, sender_window, receiver_window, file_name):
     """

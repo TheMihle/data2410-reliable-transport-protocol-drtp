@@ -1,7 +1,8 @@
 import argparse
 import ipaddress
 import sys
-
+from os import access, R_OK
+from os.path import isfile
 from client import client
 from server import server
 
@@ -29,13 +30,12 @@ def range_check_int(min_int, max_int=None):
     return range_check
 
 
-# TODO: Should ipv6 addresses be accepted?
 def ip_address(ip):
     """
     Custom type for argparse. Checks if the input address is a valid IPv4 address.
-    :param ip: IP address to be checked
-    :return: Accepted IP address
-    :raises argparse ArgumentTypeError: If address is an IPv6 address or otherwise not an IPv4 address.
+    :param ip: IP address to be checked.
+    :return: Accepted IP address.
+    :raises argparse ArgumentTypeError: If the address is an IPv6 address or otherwise not an IPv4 address.
     """
     try:
         if ipaddress.ip_address(ip).version == 6:
@@ -43,6 +43,20 @@ def ip_address(ip):
     except ValueError:
         raise argparse.ArgumentTypeError(f"{ip} is not a valid IP address")
     return ip
+
+
+# TODO: Add filetype check to file
+def file_name_check(file_name):
+    """
+    Custom type for argparse. Check if the file exists and is readable.
+    :param file_name: Name of the file to be checked.
+    :return: Filename as a string.
+    :raises argparse ArgumentTypeError: If the file does not exist or is not readable.
+    """
+    if file_name == "": return file_name
+    if not isfile(file_name) or not access(file_name, R_OK):
+        raise argparse.ArgumentTypeError(f"{file_name} does not exist or is not readable")
+    return str(file_name)
 
 
 # Parser function
@@ -61,11 +75,11 @@ def get_arguments():
                             help="Run the application in server mode, mutually exclusive with client")
     args_group.add_argument('-c', '--client', action="store_true",
                             help="Run the application in client mode, mutually exclusive with server")
-    parser.add_argument('-i', '--ip', dest="server_address", type=ip_address, default="127.0.0.1",
+    parser.add_argument('-i', '--ip', dest="server_ip", type=ip_address, default="127.0.0.1",
                         help="IPv4 address that is going to be used/is used for the server (default: 127.0.0.1)")
     parser.add_argument('-p', '--port', type=range_check_int(1024, 65535), default=8088,
                         help="Port that is going to be used, port of the server. (default: 8088)")
-    parser.add_argument('-f', '--file', dest="file_name", type=str, default="",
+    parser.add_argument('-f', '--file', dest="file_name", type=file_name_check, default="",
                         help="Name of the file that is to be transferred from client to server, ignored by the server")
     parser.add_argument('-w', '--window', type=range_check_int(1), default=3,
                         help="Size of the sender window for the client, ignored by server. (default: 3)")
@@ -76,22 +90,18 @@ def get_arguments():
 
     # Information message if arguments are ignored
     if args.server and args.file_name != "": print("Server doesnt use file name, ignoring.")
-    if args.client and args.discard_packet != -1: print("Client doesnt use discard argument, ignoring.")
     if args.server and args.window != 3: print("Server doesnt use window argument, ignoring.")
+    if args.client and args.discard_packet != -1: print("Client doesnt use discard argument, ignoring.")
     print("")
     return args
 
 
-# TODO: Maybe different default ip address
 # TODO: Check if the dest is actually needed
 # TODO: Add docstring/comment
 # TODO: Check out annotation for return type/ type hints
-# TODO: Maybe add check and print a message if an parameter is not used (address on server?)
 # TODO: Fix so that connection from other clients is rejected and the first one continues
-# TODO: Check if file exist in argparse? Or deeper in the code.
 
 # TODO: check if you should use classes for server and client
-# TODO: Should fin and fin ack have sequence numbers
 # TODO: Should fin and fin ack have sequence numbers
 # TODO: Own method for close connection?
 # TODO sys exit (1) instead if just sys exit?
@@ -107,9 +117,9 @@ def main():
     try:
         args = get_arguments()
         if args.server:
-            server(args.server_address, args.port, args.discard_packet)
+            server(args.server_ip, args.port, args.discard_packet)
         elif args.client:
-            client(args.server_address, args.port, args.window, args.file_name)
+            client(args.server_ip, args.port, args.window, args.file_name)
     except KeyboardInterrupt:
         print("Exiting because from Keyboard Interrupt")
         sys.exit()
