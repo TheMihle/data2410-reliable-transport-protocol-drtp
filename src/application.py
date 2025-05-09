@@ -107,6 +107,7 @@ def get_arguments():
 # TODO sys exit (1) instead if just sys exit?
 # TODO: Set up requirement for -f flag for client
 # TODO: Connection refused error needed or just timeout?
+# TODO: Should there be no capital letters in docstring and argparse?
 # TODO: Rest of the code
 
 

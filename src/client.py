@@ -54,8 +54,8 @@ def send_data(client_socket, server_address, seq_num, sender_window, receiver_wi
     # TODO: use the window
     window = min(sender_window, receiver_window)
 
-    file_handler = FileHandler(file_name)
-    data = file_handler.get_file_data(1, 992)
+    file_handler = FileHandler(file_name, 992)
+    data = file_handler.get_file_data(1)
 
     while True:
         try:
@@ -70,7 +70,7 @@ def send_data(client_socket, server_address, seq_num, sender_window, receiver_wi
             if Flag.ACK == flags and ack_num == seq_num:
                 seq_num += 1
                 print(f"{time_now_log()} ACK for packet = {ack_num} is received")
-                data = file_handler.get_file_data(seq_num, 992)
+                data = file_handler.get_file_data(seq_num)
                 if data == b"": break
 
             else:

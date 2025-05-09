@@ -23,32 +23,42 @@ class FileHandler:
     Has methods for reading from a file based on segment number and size and
     for writing to the end of a file.
     """
-    def __init__(self, file_name):
+    def __init__(self, file_name, segment_size=1000):
+        """
+        Initialises the FileHandler with the specified file name and segment size.
+
+        FileHandler handles file operations, for example, opening, reading, writing and closing
+        in binary mode. The File stays open until closed.
+        :param file_name: Filename of the file to be read from or written to.
+        :param segment_size: Size of the segments to be read in bytes.
+               Does nothing for writing. (default 1000 bytes)
+        """
         self.file_name = file_name
         self.file = None
+        self.segment_size = segment_size
 
-    # TODO: Maybe et segment size at construction?
-    def get_file_data(self, segment_num, segment_size):
+    def get_file_data(self, segment_num):
         """
         Gets the file data with a specified size and number.
         Recommended to stick with one segment size.
         :param segment_num: Segment number of the data to be read
-        :param segment_size: Size of the segment to be read in bytes
         :raises UnsupportedOperation: If switching between reading and writing
                 data without closing first.
         """
-        position = (segment_num - 1) * segment_size
+        position = (segment_num - 1) * self.segment_size
 
         if self.file is None:
             self.file = open(self.file_name, "rb")
 
         self.file.seek(position)
-        return self.file.read(segment_size)
+        return self.file.read(self.segment_size)
 
     def write_to_file(self, data):
         """
         Writes to the end of the file.
         :param data: Written to the end of the file.
+        :raises UnsupportedOperation: If switching between reading and writing
+                data without closing first.
         """
         if self.file is None:
             self.file = open(self.file_name, "ab")
