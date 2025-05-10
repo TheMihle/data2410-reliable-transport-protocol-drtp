@@ -76,8 +76,7 @@ def server(server_ip, port, discard_packet):
                 if seq_num == next_seq_num:
                     print(f"{time_now_log()} packet = {seq_num} is received")
                     file_handler.write_to_file(data)
-                    next_seq_num += + 1
-                    sleep(0.05)
+                    next_seq_num += 1
                     server_socket.sendto(create_packet(0, seq_num, Flag.ACK, 0), client_address)
                     print(f"{time_now_log()} ACK for packet = {seq_num} sent")
                 else:
