@@ -3,8 +3,8 @@ import ipaddress
 import sys
 from os import access, R_OK
 from os.path import isfile
-from client import client
-from server import server
+from client import Client
+from server import Server
 
 
 # Argument parsing
@@ -77,7 +77,7 @@ def get_arguments():
                             help="Run the application in client mode, mutually exclusive with server")
     parser.add_argument('-i', '--ip', dest="server_ip", type=ip_address, default="127.0.0.1",
                         help="IPv4 address that is going to be used/is used for the server (default: 127.0.0.1)")
-    parser.add_argument('-p', '--port', type=range_check_int(1024, 65535), default=8088,
+    parser.add_argument('-p', '--port', dest="server_port", type=range_check_int(1024, 65535), default=8088,
                         help="Port that is going to be used, port of the server. (default: 8088)")
     parser.add_argument('-f', '--file', dest="file_name", type=file_name_check, default="",
                         help="Name of the file that is to be transferred from client to server, ignored by the server")
@@ -88,6 +88,11 @@ def get_arguments():
                              "ignored by client. (default: -1)")
     args = parser.parse_args()
 
+    # Check for filename when running as a client
+    if args.client and args.file_name == "":
+        print("Argument Error: Must specify file name of file to be transferred with -f flag on client, exiting.\n")
+        sys.exit(1)
+
     # Information message if arguments are ignored
     if args.server and args.file_name != "": print("Server doesnt use file name, ignoring.")
     if args.server and args.window != 3: print("Server doesnt use window argument, ignoring.")
@@ -96,18 +101,14 @@ def get_arguments():
     return args
 
 
-# TODO: Check if the dest is actually needed
 # TODO: Add docstring/comment
 # TODO: Check out annotation for return type/ type hints
 # TODO: Fix so that connection from other clients is rejected and the first one continues
 
-# TODO: check if you should use classes for server and client
 # TODO: Should fin and fin ack have sequence numbers
 # TODO: Own method for close connection?
 # TODO sys exit (1) instead if just sys exit?
-# TODO: Set up requirement for -f flag for client
 # TODO: Connection refused error needed or just timeout?
-# TODO: Should there be no capital letters in docstring and argparse?
 # TODO: Rest of the code
 
 
@@ -118,9 +119,9 @@ def main():
     try:
         args = get_arguments()
         if args.server:
-            server(args.server_ip, args.port, args.discard_packet)
+            Server(args.server_ip, args.server_port, args.discard_packet).run()
         elif args.client:
-            client(args.server_ip, args.port, args.window, args.file_name)
+            Client(args.server_ip, args.server_port, args.window, args.file_name).run()
     except KeyboardInterrupt:
         print("Exiting because from Keyboard Interrupt")
         sys.exit()
@@ -128,5 +129,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-    # print(f"{set(range(1, min(4,6)))}")
