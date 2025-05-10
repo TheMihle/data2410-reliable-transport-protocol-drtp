@@ -53,7 +53,7 @@ def send_window(client_socket, server_address, window, file_handler, retransmiss
     else:  tran_type = "sent"
     sent_window = []
     for seq_num in window:
-        client_socket.sendto(create_packet(seq_num, 0, 0, 0, file_handler.get_file_data(1, 992)), server_address)
+        client_socket.sendto(create_packet(seq_num, 0, 0, 0, file_handler.get_file_data(seq_num)), server_address)
         sent_window.append(seq_num)
         print(f"{time_now_log()} packet with seq = {seq_num} is {tran_type}, sliding window = {sent_window}")
 
@@ -73,36 +73,39 @@ def send_data(client_socket, server_address, seq_num, sender_window, receiver_wi
     # TODO: Send data packets, just testing currently
     # TODO: use the window
     window_size = min(sender_window, receiver_window)
+    next_ack = 1
+    last_data_packet = float("inf")      # Temp value just so it compares true with an int
 
     file_handler = FileHandler(file_name, 992)
-    data = file_handler.get_file_data(1)
+
+    send_window(client_socket, server_address, range(next_ack , min(next_ack + window_size, last_data_packet)), file_handler)
 
     while True:
         try:
-            client_socket.sendto(create_packet(seq_num, 0, 0, 0, data), server_address)
-            print(
-                f"{time_now_log()} packet with seq = {seq_num} is sent, sliding window = {"XXXXXX"}")
-
             # TODO: Like this or one line?
             packet = client_socket.recv(1000)
             _seq_num, ack_num, flags, _window, data = parse_packet(packet)
 
-            if Flag.ACK == flags and ack_num == seq_num:
-                seq_num += 1
+            if Flag.ACK == flags and ack_num == next_ack:
                 print(f"{time_now_log()} ACK for packet = {ack_num} is received")
-                data = file_handler.get_file_data(seq_num)
-                if data == b"": break
+                data = file_handler.get_file_data(next_ack + window_size)
+                if data == b"":
+                    last_data_packet = next_ack + window_size -1
+                    print(f"next_ack {next_ack} last_data_packet {last_data_packet}")
+                    if next_ack > last_data_packet: break
+                else:
+                    client_socket.sendto(create_packet(next_ack + window_size, 0, 0, 0, data), server_address)
+                    print(f"{time_now_log()} packet with seq = {next_ack + window_size} is sent, sliding window = {list(range(next_ack, next_ack + window_size))}")
+                next_ack += 1
 
             else:
                 print(f"Error, packet with seq_num {seq_num} may have been lost")
         except timeout:
             print(f"{time_now_log()} RTO occurred")
-            continue
-        #  TODO: Retransmission should have different log message
+            send_window(client_socket, server_address, range(next_ack, min(next_ack + window_size, last_data_packet)), file_handler, True)
 
         sleep(0.05)
     file_handler.close_file()
-
 
 
 def close_connection(client_socket, server_address):
