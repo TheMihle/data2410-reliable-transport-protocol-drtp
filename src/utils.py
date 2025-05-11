@@ -37,7 +37,7 @@ class FileHandler:
         self.file = None
         self.segment_size = segment_size
 
-    def get_file_data(self, segment_num):
+    def get_file_data(self, segment_num) -> bytes:
         """
         Gets the file data with a specified size and number.
         Recommended to stick with one segment size.
@@ -53,7 +53,7 @@ class FileHandler:
         self.file.seek(position)
         return self.file.read(self.segment_size)
 
-    def write_to_file(self, data):
+    def write_to_file(self, data) -> None:
         """
         Writes to the end of the file.
         :param data: Written to the end of the file.
@@ -65,7 +65,7 @@ class FileHandler:
 
         self.file.write(data)
 
-    def close_file(self):
+    def close_file(self) -> None:
         """
         Closes and clears the file from the object.
         """
@@ -74,7 +74,7 @@ class FileHandler:
             self.file = None
 
 
-def create_packet(seq_num, ack_num, flags, window, data=None):
+def create_packet(seq_num, ack_num, flags, window, data=None) -> bytes:
     """
     Creates a packet based on the input parameters.
     :param seq_num: Seq number of the packet
@@ -85,7 +85,6 @@ def create_packet(seq_num, ack_num, flags, window, data=None):
                 the packet will be empty. Must be in bytes.
     """
     header_format = "!HHHH"
-
     packet = pack(header_format, seq_num, ack_num, flags, window)
 
     if data is not None:
@@ -106,7 +105,7 @@ def parse_packet(packet) -> tuple:
     return *packet, data
 
 
-def time_now_log():
+def time_now_log() -> str:
     """
     Creates a string with current time formatted as "HH:MM:SS.mmmmmm --"
     ready to specify time in a log.

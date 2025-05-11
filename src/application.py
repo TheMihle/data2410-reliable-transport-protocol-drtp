@@ -18,7 +18,7 @@ def range_check_int(min_int, max_int=None):
     :return: Function that returns the valid int.
     :raises argparse ArgumentTypeError: If the value is out of range or not an int.
     """
-    def range_check(value):
+    def range_check(value) -> int:
         try:
             integer = int(value)
         except ValueError:
@@ -30,7 +30,7 @@ def range_check_int(min_int, max_int=None):
     return range_check
 
 
-def ip_address(ip):
+def ip_address(ip) -> str:
     """
     Custom type for argparse. Checks if the input address is a valid IPv4 address.
     :param ip: IP address to be checked.
@@ -46,7 +46,7 @@ def ip_address(ip):
 
 
 # TODO: Add filetype check to file
-def file_name_check(file_name):
+def file_name_check(file_name) -> str:
     """
     Custom type for argparse. Check if the file exists and is readable.
     :param file_name: Name of the file to be checked.
@@ -80,7 +80,7 @@ def get_arguments():
     parser.add_argument('-p', '--port', dest="server_port", type=range_check_int(1024, 65535), default=8088,
                         help="Port that is going to be used, port of the server. (default: 8088)")
     parser.add_argument('-f', '--file', dest="file_name", type=file_name_check, default="",
-                        help="Name of the file that is to be transferred from client to server, ignored by the server")
+                        help="Name of the file that is to be transferred from client to server, ignored by the server.")
     parser.add_argument('-w', '--window', type=range_check_int(1), default=3,
                         help="Size of the sender window for the client, ignored by server. (default: 3)")
     parser.add_argument('-d', '--discard', dest="discard_packet", type=int, default=-1,
@@ -102,12 +102,10 @@ def get_arguments():
 
 
 # TODO: Add docstring/comment
-# TODO: Check out annotation for return type/ type hints
+# TODO: Check out annotation for return type/ type hints, possible to specify length and content of eks a tuple?
 # TODO: Fix so that connection from other clients is rejected and the first one continues
 
 # TODO: Should fin and fin ack have sequence numbers
-# TODO: Own method for close connection?
-# TODO sys exit (1) instead if just sys exit?
 # TODO: Connection refused error needed or just timeout?
 # TODO: Rest of the code
 

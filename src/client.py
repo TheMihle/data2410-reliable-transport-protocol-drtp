@@ -12,21 +12,21 @@ class Client:
     # Constants
     TIMEOUT = 0.4
 
-    def __init__(self, server_ip, port, sender_window, file_name):
+    def __init__(self, server_ip, server_port, sender_window, file_name):
         """
 
-        :param server_ip:
-        :param port:
-        :param sender_window:
-        :param file_name:
+        :param server_ip: IP address of the server that the client should connect to.
+        :param server_port: Port number on the server that the client should connect to.
+        :param sender_window: Maximum size of the sliding window the sender should send.
+        :param file_name: Name of the file that should be transferred.
         """
-        self.server_address = (server_ip, port)
+        self.server_address = (server_ip, server_port)
         self.socket = socket(AF_INET, SOCK_DGRAM)
         self.file_handler = FileHandler(file_name, 992)
         self.window_size = sender_window
 
 
-    def establish_connection(self):
+    def establish_connection(self) -> None:
         """
         Establishes connection with the server via sending an SYN.
         Then waiting for SYN-ACK and responding with ACK.
@@ -47,21 +47,19 @@ class Client:
         # TODO: IT CONTINUES EVEN IF THIS FLAG FAILS
         if Flag.SYN | Flag.ACK == flags:
             print("SYN-ACK packet is received")
-            sleep(0.2)
             self.socket.sendto(create_packet(0, 0, Flag.ACK, 0), self.server_address)
-            print("ACK packet is sent")
-            print("Connection established\n")
+            print("ACK packet is sent\n"
+                  "Connection established\n")
         else:
             print("Received packet missing SYN or ACK flag\n")
         self.window_size = min(self.window_size, receiver_window)
 
 
-    def send_window(self, window, file_handler, retransmission=False):
+    def send_window(self, window, file_handler, retransmission=False) -> None:
         """
         Sends all packets in the specified window. Can specify if its retransmission or not,
         makes a different console message.
-        :param server_address: Address of the server to establish connection with.
-                Tuple with (ip, port).
+        :param server_address: Address of the server to establish connection with. Tuple with (ip, port).
         :param window: Window of packets that should be sent. List with sequence numbers.
         :param file_handler: File handler for the file that is written tp.
         :param retransmission: Boolean True if it's a retransmission.
@@ -75,18 +73,16 @@ class Client:
             print(f"{time_now_log()} packet with seq = {seq_num} is {tran_type}, sliding window = {sent_window}")
 
 
-    def send_data(self, seq_num):
+    def send_data(self, start_seq_num=1) -> None:
         """
         Sends the file to the receiver using the Go-Back-N strategy. Uses the smallest sliding window
-        of client and receiver
-        :param server_address: Address of the server to establish connection with.
-                Tuple with (ip, port).
-        :param seq_num: Sequence number that the transfer should start on.
+        of the client and receiver.
+        :param server_address: Address of the server to establish connection with.Tuple with (ip, port).
+        :param start_seq_num: Sequence number that the transfer should start on. Default is 1.
         :param sender_window: Window size of the client.
         :param receiver_window: Window size of the receiver/server.
-        :param file_name: Filename of the file that should be transferred.
         """
-        next_ack = seq_num
+        next_ack = start_seq_num
         last_data_packet = float("inf")      # Temp value just so it compares true with an int
 
 
@@ -117,16 +113,15 @@ class Client:
                 print(f"{time_now_log()} RTO occurred")
                 self.send_window(range(next_ack, min(next_ack + self.window_size, last_data_packet + 1)), self.file_handler, True)
 
-            sleep(0.04)
+            sleep(0.01)
         self.file_handler.close_file()
 
 
-    def close_connection(self):
+    def close_connection(self) -> None:
         """
         Closes the connection by sending a FIN packet to the receiver. Then waits for a
         FIN-ACK packet to confirm closing the connection.
-        :param server_address: Address of the server to establish connection with.
-                Tuple with (ip, port).
+        :param server_address: Address of the server to establish connection with. Tuple with (ip, port).
         """
         # TODO: Check if closing connection work as it should both server and client
         #       What if FIN ACK isnt received?
@@ -141,25 +136,32 @@ class Client:
         _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)
 
         if Flag.FIN | Flag.ACK == flags:
-            print("FIN ACK packet is received")
-            print("Connection closes")
+            print("FIN ACK packet is received\n"
+                  "Connection closes")
 
+    # TODO: Basically the same thing in server and client
+    def close_client(self, exit_code=0):
+        """
+        Closes the client's file handler and socket before exiting the client.
+        :param exit_code: The exit code that should happen when exiting.
+        """
+        self.file_handler.close_file()
+        self.socket.close()
+        print("Exiting client")
+        sys.exit(exit_code)
 
-    def run(self):
+    def run(self) -> None:
         """
         Runs the client part of the application. Establishes a connection with the server and sends
         a file with Go-Back-N strategy before closing the connection.
-        :param server_address: IP of the server that should be connected to.
-        :param server_port: Port number on the server that should be connected to.
+        :param server_address: Address of the server to establish connection with. Tuple with (ip, port).
         :param sender_window: Size of the sender window, number of packets can be handled at once
         :param file_name: File name of the file that should be transferred.
         """
         self.establish_connection()
 
-        # TODO: Maybe specifying start sequence number is not needed
-        self.send_data(1)
+        self.send_data()
 
         self.close_connection()
 
-        print("\nExiting client")
-        sys.exit()
+        self.close_client()
