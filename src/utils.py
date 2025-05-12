@@ -92,7 +92,7 @@ def create_packet(seq_num, ack_num, flags, window, data=None) -> bytes:
     return packet
 
 
-def parse_packet(packet) -> tuple:
+def parse_packet(packet) -> tuple[int, int, int, int, bytes]:
     """
     Parses the packet and returns the header information and data
     :param packet: The packet that should be parsed

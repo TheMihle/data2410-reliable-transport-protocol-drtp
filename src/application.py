@@ -1,6 +1,7 @@
 import argparse
 import ipaddress
 import sys
+from argparse import Namespace
 from os import access, R_OK
 from os.path import isfile
 from client import Client
@@ -48,7 +49,8 @@ def ip_address(ip) -> str:
 # TODO: Add filetype check to file
 def file_name_check(file_name) -> str:
     """
-    Custom type for argparse. Check if the file exists and is readable.
+    Custom type for argparse. Check if the file exists and is readable if it's provided.
+    Also checks if the file is a correct file format. (.jpg, .JPG, .jpeg, .JPEG)
     :param file_name: Name of the file to be checked.
     :return: Filename as a string.
     :raises argparse ArgumentTypeError: If the file does not exist or is not readable.
@@ -56,15 +58,17 @@ def file_name_check(file_name) -> str:
     if file_name == "": return file_name
     if not isfile(file_name) or not access(file_name, R_OK):
         raise argparse.ArgumentTypeError(f"{file_name} does not exist or is not readable")
+    if not file_name.lower().endswith((".jpg",".jpeg")):
+        raise argparse.ArgumentTypeError(f"{file_name} is not a valid image file type, must be jpg, jpeg")
     return str(file_name)
 
 
 # Parser function
-def get_arguments():
+def get_arguments() -> Namespace:
     """
     Parses the input arguments for the application.
     See argument help for specifics about each argument.
-    Checks if arguments are valid and notifies if they are ignored.
+    Checks if arguments are valid/allowed and notifies if they are ignored.
     :return: Argument object with parsed arguments.
     """
     parser = argparse.ArgumentParser(
@@ -110,9 +114,10 @@ def get_arguments():
 # TODO: Rest of the code
 
 
-def main():
+# TODO: Maybe move keyboardinterrupt to the server/client so that the socket can be closed first
+def main() -> None:
     """
-    Activates the server or client based on the input arguments.
+    Activates the server or client based on the input arguments. Exits if KeyboardInterrupt is raised.
     """
     try:
         args = get_arguments()
