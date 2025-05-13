@@ -27,7 +27,7 @@ class Server:
         self.discard_packet = discard_packet
         self.socket = socket(AF_INET, SOCK_DGRAM)
         # So that the file name probably will be unique if tun multiple times
-        self.file_handler = FileHandler(f"received_file_{randint(1, 99999999)}.txt")
+        self.file_handler = FileHandler(f"received_img_{randint(1, 99999999)}.jpg")
         self.data_start_time = None
         self.cumulative_data = 0
 

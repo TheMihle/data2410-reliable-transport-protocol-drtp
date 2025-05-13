@@ -109,7 +109,7 @@ class Client:
                 print(f"{time_now_log()} RTO occurred")
                 self.send_window(range(next_ack, min(next_ack + self.window_size, last_data_packet + 1)), True)
 
-            sleep(0.01)
+            sleep(0.005)
         self.file_handler.close_file()
 
     def close_connection(self) -> None:

@@ -46,7 +46,6 @@ def ip_address(ip) -> str:
     return ip
 
 
-# TODO: Add filetype check to file
 def file_name_check(file_name) -> str:
     """
     Custom type for argparse. Check if the file exists and is readable if it's provided.
