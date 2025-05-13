@@ -36,7 +36,7 @@ def ip_address(ip) -> str:
     Custom type for argparse. Checks if the input address is a valid IPv4 address.
     :param ip: IP address to be checked.
     :return: Accepted IP address.
-    :raises argparse ArgumentTypeError: If the address is an IPv6 address or otherwise not an IPv4 address.
+    :raises argparse ArgumentTypeError: If the address is an IPv6 address, or otherwise not an IPv4 address.
     """
     try:
         if ipaddress.ip_address(ip).version == 6:
@@ -104,29 +104,27 @@ def get_arguments() -> Namespace:
     return args
 
 
-# TODO: Add docstring/comment
+# TODO: Read over docstring/comment
 # TODO: Check out annotation for return type/ type hints, possible to specify length and content of eks a tuple?
 # TODO: Fix so that connection from other clients is rejected and the first one continues
+# TODO: IS there any point implementing code on FIN packages or data packages X times with timeout before closing?
+
 
 # TODO: Should fin and fin ack have sequence numbers
 # TODO: Connection refused error needed or just timeout?
 # TODO: Rest of the code
 
 
-# TODO: Maybe move keyboardinterrupt to the server/client so that the socket can be closed first
+# TODO: Maybe move keyboard interrupt to the server/client so that the socket can be closed first
 def main() -> None:
     """
     Activates the server or client based on the input arguments. Exits if KeyboardInterrupt is raised.
     """
-    try:
-        args = get_arguments()
-        if args.server:
-            Server(args.server_ip, args.server_port, args.discard_packet).run()
-        elif args.client:
-            Client(args.server_ip, args.server_port, args.window, args.file_name).run()
-    except KeyboardInterrupt:
-        print("Exiting because from Keyboard Interrupt")
-        sys.exit()
+    args = get_arguments()
+    if args.server:
+        Server(args.server_ip, args.server_port, args.discard_packet).run()
+    elif args.client:
+        Client(args.server_ip, args.server_port, args.window, args.file_name).run()
 
 
 if __name__ == "__main__":
