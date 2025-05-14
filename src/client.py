@@ -30,7 +30,8 @@ class Client:
     def establish_connection(self) -> None:
         """
         Establishes connection with the server via sending an SYN. Then waiting for SYN-ACK to
-        establish the connection and responding with ACK. Exits if an error is raised.
+        establish the connection and responding with ACK. Ignores wrong flags,
+        Exits the client if an error is raised. Only returns on success.
         :param self: Variables of the object itself.
         """
         # TODO: Check if SYN connection establishment work as it should
@@ -41,17 +42,21 @@ class Client:
             self.socket.settimeout(self.TIMEOUT)
             print("SYN packet is sent")
 
-            packet = self.socket.recv(1000)
-            _seq_num, _ack_num, flags, receiver_window, _data = parse_packet(packet)
+            # Waits for SYN | ACK ignores other packets
+            while True:
+                packet = self.socket.recv(1000)
+                _seq_num, _ack_num, flags, receiver_window, _data = parse_packet(packet)
 
-            # TODO: IT CONTINUES EVEN IF THIS FLAG FAILS
-            if Flag.SYN | Flag.ACK == flags:
-                print("SYN-ACK packet is received")
-                self.socket.sendto(create_packet(0, 0, Flag.ACK, 0), self.server_address)
-                print("ACK packet is sent\n"
-                      "Connection established\n")
-            else:
-                print("Received packet missing SYN or ACK flag\n")
+                if Flag.SYN | Flag.ACK == flags:
+                    print("SYN-ACK packet is received")
+                    self.socket.sendto(create_packet(0, 0, Flag.ACK, 0), self.server_address)
+                    print("ACK packet is sent\n"
+                          "Connection established\n")
+                    break
+                else:
+                    print("Received packet missing SYN or ACK flag\n")
+
+            # Chooses the smallest window size between the client and receiver.
             self.window_size = min(self.window_size, receiver_window)
         except timeout:
             print("\nError: Connection timed out while trying to establish connection")
@@ -69,7 +74,7 @@ class Client:
         Sends all packets in the specified window. Can specify if its retransmission, makes a different console message.
         :param self: Variables of the object itself.
         :param window: Window of packets that should be sent. List with sequence numbers.
-        :param retransmission: Boolean True if it's a retransmission. Changes the console output.
+        :param retransmission: Set True if it's a retransmission. Changes the console output.
         :raises ConnectionError: If the server refuses the packet.
         """
         if retransmission: tran_type = "retransmitted"
@@ -79,7 +84,6 @@ class Client:
             self.socket.sendto(create_packet(seq_num, 0, 0, 0, self.file_handler.get_file_data(seq_num)), self.server_address)
             sent_window.append(seq_num)
             print(f"{time_now_log()} packet with seq = {seq_num} is {tran_type}, sliding window = {sent_window}")
-
 
     def send_data(self, start_seq_num=1) -> None:
         """
@@ -95,6 +99,7 @@ class Client:
         try:
             self.send_window(range(next_ack , min(next_ack + self.window_size, last_data_packet + 1)))
 
+            #  Continue sending data packets per ACK until the last packet is ACKed.
             while True:
                 try:
                     # TODO: Like this or one line?
@@ -105,17 +110,20 @@ class Client:
                         print(f"{time_now_log()} ACK for packet = {ack_num} is received")
                         next_ack += 1
 
+                        # TODO: is it possible to simplify this?
                         if next_ack + self.window_size - 1 <= last_data_packet:
                             data = self.file_handler.get_file_data(next_ack + self.window_size - 1)
+                        # Check if the last data packet has been found.
                         if last_data_packet == float('inf') and data == b"":
                             last_data_packet = next_ack + self.window_size - 2
+                        # Sends data if it's not after the last data packet.
                         if next_ack + self.window_size - 1 <= last_data_packet:
                             self.socket.sendto(create_packet(next_ack + self.window_size - 1, 0, 0, 0, data), self.server_address)
                             print(f"{time_now_log()} packet with seq = {next_ack + self.window_size - 1} is sent, sliding window = {list(range(next_ack, min(next_ack + self.window_size, last_data_packet)))}")
-                        if next_ack > last_data_packet: break
+                        if next_ack > last_data_packet: return    # Returns if the last data packet has been ACKed
 
                     else:
-                        print(f"Error, packet with wrong flag or wrong ack number received")
+                        print(f"Received packet with wrong flag or wrong ack number received")
                 except timeout:
                     print(f"{time_now_log()} RTO occurred")
                     self.send_window(range(next_ack, min(next_ack + self.window_size, last_data_packet + 1)), True)
@@ -132,27 +140,31 @@ class Client:
     def close_connection(self) -> None:
         """
         Closes the connection by sending a FIN packet to the receiver. Then waits for a
-        FIN-ACK packet to confirm closing the connection. Exits if an error is raised.
+        FIN-ACK packet to confirm closing the connection. Ignores other flags. Exits if an error is raised.
         :param self: Variables of the object itself.
         """
         # TODO: Check if closing connection work as it should both server and client
-        #       What if FIN ACK isnt received?
-        # TODO: What if the package received doesn't have the right flag error? Retry?
+        #       What if FIN ACK isnt received.
+        # TODO: what should happen if it times out?
         try:
             print("\nConnection Teardown:\n")
             # Send FIN packet
             self.socket.sendto(create_packet(0, 0, Flag.FIN, 0), self.server_address)
             print("FIN packet is sent")
 
-            # Receive and check for FIN-ACK packet. Close if so.
-            packet = self.socket.recv(1000)
-            _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)
+            # Receive and check for FIN-ACK packet. Close if so. Ignore other flags
+            while True:
+                packet = self.socket.recv(1000)
+                _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)
 
-            if Flag.FIN | Flag.ACK == flags:
-                print("FIN ACK packet is received\n"
-                      "Connection closes")
+                if Flag.FIN | Flag.ACK == flags:
+                    print("FIN ACK packet is received\n"
+                          "Connection closes")
+                    break
+                else:
+                    print("Received packet missing FIN or ACK flag\n")
         except timeout:
-            pass
+            print("Timed out while waiting for FIN-ACK packet")
         except ConnectionError:
             print("\nError: Connection refused by server while trying to close connection")
             self.close_client(1)

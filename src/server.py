@@ -26,7 +26,7 @@ class Server:
         self.server_address = (server_ip, server_port)
         self.discard_packet = discard_packet
         self.socket = socket(AF_INET, SOCK_DGRAM)
-        # So that the file name probably will be unique if tun multiple times
+        # So that the file name probably will be unique if run multiple times
         self.file_handler = FileHandler(f"received_img_{randint(1, 99999999)}.jpg")
         self.data_start_time = None
         self.cumulative_data = 0
@@ -34,30 +34,39 @@ class Server:
     def establish_connection(self) -> None:
         """
         Establishes connection with a client. Waits for SYN packet and response with SYN-ACK.
-        Connection is established if ACK is received. Exits if an error is raised,
+        Connection is established if ACK is received. Ignores other packages and Exits if an error
+        is raised. Only returns on success.
         :param self: Variables of the object itself.
         """
         try:
             print("Ready to accept connection\n")
-            packet, client_address = self.socket.recvfrom(1000)
-            _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)
-            self.socket.settimeout(self.TIMEOUT)
+            # Waits for SYN packet, ignore others.
+            while True:
+                packet, client_address = self.socket.recvfrom(1000)
+                _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)
+                self.socket.settimeout(self.TIMEOUT)
 
-            if Flag.SYN == flags:
-                print("SYN packet is received")
-                self.socket.sendto(create_packet(0, 0, Flag.SYN | Flag.ACK, self.RECEIVER_WINDOW), client_address)
-                print("SYN-ACK packet is sent")
-            else:
-                print("Received packet missing SYN flag")
+                if Flag.SYN == flags:
+                    print("SYN packet is received")
+                    self.socket.sendto(create_packet(0, 0, Flag.SYN | Flag.ACK, self.RECEIVER_WINDOW), client_address)
+                    print("SYN-ACK packet is sent")
+                    break
+                else:
+                    print("Received packet missing SYN flag while waiting to establish connection")
 
-            packet, client_address = self.socket.recvfrom(1000)
-            _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)
+            # TODO: Can result in a continues loop as client think connection is established and
+            #        continuously sends data packets if ACK is lost.
+            # Waits for ACK packet, ignores others.
+            while True:
+                packet, client_address = self.socket.recvfrom(1000)
+                _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)
 
-            if Flag.ACK == flags:
-                print("ACK packet is received\n"
-                      "Connection Established\n")
-            else:
-                print("Received packet missing ACK flag")
+                if Flag.ACK == flags:
+                    print("ACK packet is received\n"
+                          "Connection Established\n")
+                    return
+                else:
+                    print("Received packet missing ACK flag while waiting to establish connection")
         except timeout:
             print("\nError: Connection timed out while trying to establish connection")
             self.exit_server(1)
@@ -71,7 +80,7 @@ class Server:
     def accept_data(self, start_seq_num=1) -> None:
         """
         Listens and accepts incoming data packets. Checks of they arrive in the correct order
-        and responds with ACK if it does. Starts closing the connection when FIN packet is received.
+        and respond with ACK if it does. Starts closing the connection when FIN packet is received.
         Exits if an error is raised.
         :param self: Variables of the object itself.
         :param start_seq_num: Sequence number that the transfer should start on. Default is 1.
@@ -119,11 +128,11 @@ class Server:
 
     def close_connection(self, client_address) -> None:
         """
-        Finishes closing the connection by responding with an FIN-ACK packet.
+        Finishes closing the connection by responding with a FIN-ACK packet.
         Calculates and outputs the throughput. Exits if an error is raised.
         :param self: Variables of the object itself.
-        :param client_address: IP address and port number of the client that server is connected to.
-                Tuple with (ip, port).
+        :param client_address: IP address and port number of the client that the server is
+                connected to.Tuple with (ip, port).
         """
         print("\nFIN packet is received")
         try:
@@ -135,7 +144,7 @@ class Server:
             print(f"\nError: {e}")
 
         throughput = (self.cumulative_data / (time() - self.data_start_time)) * 8 / 1e6
-        print(f"\nThe throughput was {format(throughput, ".2f")} Mb/s\n"
+        print(f"\nThe throughput was {format(throughput, ".2f")} Mbps\n"
               "Connection Closed\n")
 
     def exit_server(self, exit_code=0) -> None:
