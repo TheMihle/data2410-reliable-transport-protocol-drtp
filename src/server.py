@@ -73,8 +73,8 @@ class Server:
         except ConnectionError:
             print("\nError: Connection refused by client while trying to establish connection")
             self.exit_server(1)
-        except OSError as e:
-            print(f"\nError: {e}")
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
             self.exit_server(1)
 
     def accept_data(self, start_seq_num=1) -> None:
@@ -122,8 +122,8 @@ class Server:
         except ConnectionError:
             print("\nError: Connection refused by client while trying to send ACK for data packet")
             self.exit_server(1)
-        except OSError as e:
-            print(f"\nError: {e}")
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
             self.exit_server(1)
 
     def close_connection(self, client_address) -> None:
@@ -140,8 +140,8 @@ class Server:
             print("FIN-ACK packet is sent")
         except ConnectionError:
             print("\nError: Connection refused by client while trying to send FIN-ACK")
-        except OSError as e:
-            print(f"\nError: {e}")
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
 
         throughput = (self.cumulative_data / (time() - self.data_start_time)) * 8 / 1e6
         print(f"\nThe throughput was {format(throughput, ".2f")} Mbps\n"

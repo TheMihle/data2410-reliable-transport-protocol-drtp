@@ -62,8 +62,8 @@ class Client:
         except ConnectionError:
             print("\nError: Connection refused by server while trying to establish connection")
             self.close_client(1)
-        except OSError as e:
-            print(f"\nError: {e}")
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
             self.close_client(1)
 
     def send_window(self, window, retransmission=False) -> None:
@@ -134,8 +134,8 @@ class Client:
         except ConnectionError:
             print("\nError: Connection refused by server while trying to send data")
             self.close_client(1)
-        except OSError as e:
-            print(f"\nError: {e}")
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
             self.close_client(1)
 
     def close_connection(self) -> None:
@@ -169,12 +169,12 @@ class Client:
         except ConnectionError:
             print("\nError: Connection refused by server while trying to close connection")
             self.close_client(1)
-        except OSError as e:
-            print(f"\nError: {e}")
+        except Exception as e:
+            print(f"\nUnexpected error: {e}")
             self.close_client(1)
 
     # TODO: Basically the same thing in server and client
-    def close_client(self, exit_code=0):
+    def close_client(self, exit_code=0) -> None:
         """
         Closes the client's file handler and socket before exiting the client.
         :param self: Variables of the object itself.

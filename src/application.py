@@ -105,21 +105,14 @@ def get_arguments() -> Namespace:
 
 
 # TODO: Read over docstring/comment
-# TODO: Check out annotation for return type/ type hints, possible to specify length and content of eks a tuple?
+# TODO: Check out annotation for return type/ type hints?
 # TODO: Fix so that connection from other clients is rejected and the first one continues
 # TODO: IS there any point implementing code on FIN packages or data packages X times with timeout before closing?
-# TODO Check what happens if wrong sized header arrive.... What error.
-# TODO: Is OSerror enough?
-
 # TODO: Should fin and fin ack have sequence numbers
-# TODO: Connection refused error needed or just timeout?
-# TODO: Rest of the code
 
-
-# TODO: Maybe move keyboard interrupt to the server/client so that the socket can be closed first
 def main() -> None:
     """
-    Activates the server or client based on the input arguments. Exits if KeyboardInterrupt is raised.
+    Activates the server or client based on the input arguments.
     """
     args = get_arguments()
     if args.server:
