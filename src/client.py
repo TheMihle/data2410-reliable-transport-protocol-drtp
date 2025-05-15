@@ -34,8 +34,6 @@ class Client:
         Exits the client if an error is raised. Only returns on success.
         :param self: Variables of the object itself.
         """
-        # TODO: Check if SYN connection establishment work as it should
-        #       What if one of the packets is dropped?
         try:
             print("Connection Establishment Phase:\n")
             self.socket.sendto(create_packet(1, 0, Flag.SYN, 0), self.server_address)
@@ -68,7 +66,6 @@ class Client:
             print(f"\nError: {e}")
             self.close_client(1)
 
-    # TODO: Stop if file is empty
     def send_window(self, window, retransmission=False) -> None:
         """
         Sends all packets in the specified window. Can specify if its retransmission, makes a different console message.
@@ -87,9 +84,9 @@ class Client:
 
     def send_data(self, start_seq_num=1) -> None:
         """
-        Sends the file to the receiver using the Go-Back-N strategy. Uses the smallest sliding window
-        of the client and receiver. Listens for ACKs and sends the next packet in the window.
-        If no ACKs arrive, retransmits the window. Exits if an error is raised.
+        Sends the file to the receiver using the Go-Back-N strategy. Sends the whole window then listens
+        for ACKs and sends the next packet in the window. If no ACKs arrive, retransmits the window.
+        Ignores other packages. Exits if an error is raised.
         :param self: Variables of the object itself.
         :param start_seq_num: Sequence number that the transfer should start on. Default is 1.
         """
@@ -97,31 +94,36 @@ class Client:
         last_data_packet = float("inf")      # Temp value just so it compares true with an int
 
         try:
-            self.send_window(range(next_ack , min(next_ack + self.window_size, last_data_packet + 1)))
+            self.send_window(range(next_ack , next_ack + self.window_size))
 
             #  Continue sending data packets per ACK until the last packet is ACKed.
             while True:
                 try:
                     # TODO: Like this or one line?
                     packet = self.socket.recv(1000)
-                    _seq_num, ack_num, flags, _window, data = parse_packet(packet)
+                    _seq_num, ack_num, flags, _window, _data = parse_packet(packet)
 
                     if Flag.ACK == flags and ack_num == next_ack:
                         print(f"{time_now_log()} ACK for packet = {ack_num} is received")
                         next_ack += 1
+                        next_seq_num = next_ack + self.window_size - 1
+                        data = ""
 
-                        # TODO: is it possible to simplify this?
-                        if next_ack + self.window_size - 1 <= last_data_packet:
-                            data = self.file_handler.get_file_data(next_ack + self.window_size - 1)
                         # Check if the last data packet has been found.
-                        if last_data_packet == float('inf') and data == b"":
-                            last_data_packet = next_ack + self.window_size - 2
-                        # Sends data if it's not after the last data packet.
-                        if next_ack + self.window_size - 1 <= last_data_packet:
-                            self.socket.sendto(create_packet(next_ack + self.window_size - 1, 0, 0, 0, data), self.server_address)
-                            print(f"{time_now_log()} packet with seq = {next_ack + self.window_size - 1} is sent, sliding window = {list(range(next_ack, min(next_ack + self.window_size, last_data_packet)))}")
-                        if next_ack > last_data_packet: return    # Returns if the last data packet has been ACKed
+                        if last_data_packet == float('inf'):
+                            data = self.file_handler.get_file_data(next_seq_num)
+                            if data == b"":
+                                last_data_packet = next_seq_num - 1
 
+                        # Sends data if it's not after the last data packet.
+                        if next_seq_num <= last_data_packet:
+                            self.socket.sendto(create_packet(next_seq_num, 0, 0, 0, data), self.server_address)
+                            print(f"{time_now_log()} packet with seq = {next_seq_num} is sent, sliding window = {list(range(next_ack, min(next_ack + self.window_size, last_data_packet)))}")
+
+                        # Returns if the last data packet has been ACKed
+                        if next_ack > last_data_packet:
+                            self.file_handler.close_file()
+                            return
                     else:
                         print(f"Received packet with wrong flag or wrong ack number received")
                 except timeout:
@@ -135,7 +137,6 @@ class Client:
         except OSError as e:
             print(f"\nError: {e}")
             self.close_client(1)
-        self.file_handler.close_file()
 
     def close_connection(self) -> None:
         """
