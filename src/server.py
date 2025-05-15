@@ -54,9 +54,7 @@ class Server:
                 else:
                     print("Received packet missing SYN flag while waiting to establish connection")
 
-            # TODO: Can result in a continues loop as client think connection is established and
-            #        continuously sends data packets if ACK is lost.
-            # Waits for ACK packet, ignores others.
+            # Waits for an ACK packet, ignores others.
             while True:
                 packet, client_address = self.socket.recvfrom(1000)
                 _seq_num, _ack_num, flags, _window, _data = parse_packet(packet)

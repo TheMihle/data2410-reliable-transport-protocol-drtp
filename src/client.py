@@ -84,7 +84,7 @@ class Client:
 
     def send_data(self, start_seq_num=1) -> None:
         """
-        Sends the file to the receiver using the Go-Back-N strategy. Sends the whole window then listens
+        Sends the file to the receiver using the Go-Back-N strategy. Sends the whole window, then listens
         for ACKs and sends the next packet in the window. If no ACKs arrive, retransmits the window.
         Ignores other packages. Exits if an error is raised.
         :param self: Variables of the object itself.
@@ -92,6 +92,8 @@ class Client:
         """
         next_ack = start_seq_num
         last_data_packet = float("inf")      # Temp value just so it compares true with an int
+        last_retrans_num = 0
+        retrans_attempts = 0
 
         try:
             self.send_window(range(next_ack , next_ack + self.window_size))
@@ -128,6 +130,17 @@ class Client:
                         print(f"Received packet with wrong flag or wrong ack number received")
                 except timeout:
                     print(f"{time_now_log()} RTO occurred")
+
+                    # Counts and exits if too many retransmissions have happened > 5
+                    if last_retrans_num == next_ack:
+                        if retrans_attempts > 7:
+                            print("\nError: Too many retransmissions without any ACKs while trying to send data")
+                            self.close_client(1)
+                        retrans_attempts +=1
+                    else:
+                        last_retrans_num = next_ack
+                        retrans_attempts = 1
+
                     self.send_window(range(next_ack, min(next_ack + self.window_size, last_data_packet + 1)), True)
 
                 sleep(0.005)
@@ -144,9 +157,7 @@ class Client:
         FIN-ACK packet to confirm closing the connection. Ignores other flags. Exits if an error is raised.
         :param self: Variables of the object itself.
         """
-        # TODO: Check if closing connection work as it should both server and client
-        #       What if FIN ACK isnt received.
-        # TODO: what should happen if it times out?
+        # TODO: Times out when FIN-ACK is lost. what should happen if it times out?
         try:
             print("\nConnection Teardown:\n")
             # Send FIN packet
@@ -173,7 +184,6 @@ class Client:
             print(f"\nUnexpected error: {e}")
             self.close_client(1)
 
-    # TODO: Basically the same thing in server and client
     def close_client(self, exit_code=0) -> None:
         """
         Closes the client's file handler and socket before exiting the client.
