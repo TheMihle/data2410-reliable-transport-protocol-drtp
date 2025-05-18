@@ -36,7 +36,7 @@ class Client:
         """
         try:
             print("Connection Establishment Phase:\n")
-            self.socket.sendto(create_packet(1, 0, Flag.SYN, 0), self.server_address)
+            self.socket.sendto(create_packet(0, 0, Flag.SYN, 0), self.server_address)
             self.socket.settimeout(self.TIMEOUT)
             print("SYN packet is sent")
 
@@ -101,7 +101,6 @@ class Client:
             #  Continue sending data packets per ACK until the last packet is ACKed.
             while True:
                 try:
-                    # TODO: Like this or one line?
                     packet = self.socket.recv(1000)
                     _seq_num, ack_num, flags, _window, _data = parse_packet(packet)
 
@@ -143,7 +142,6 @@ class Client:
 
                     self.send_window(range(next_ack, min(next_ack + self.window_size, last_data_packet + 1)), True)
 
-                sleep(0.005)
         except ConnectionError:
             print("\nError: Connection refused by server while trying to send data")
             self.close_client(1)

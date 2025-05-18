@@ -104,11 +104,6 @@ def get_arguments() -> Namespace:
     return args
 
 
-# TODO: Check out annotation for return type/ type hints?
-# TODO: Fix so that connection from other clients is rejected and the first one continues
-# TODO: If send data fails, should it close or move to closing.
-# TODO: Should fin and fin ack have sequence numbers
-
 def main() -> None:
     """
     Activates the server or client based on the input arguments.
