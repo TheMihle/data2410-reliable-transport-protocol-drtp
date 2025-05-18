@@ -171,10 +171,9 @@ class Server:
                 self.exit_server(1)
 
             self.establish_connection()
-
             self.accept_data()
-
             self.exit_server()
+
         except KeyboardInterrupt:
             print("\nKeyboard interrupt detected, closing server")
             self.exit_server(0)

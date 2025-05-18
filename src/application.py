@@ -104,7 +104,6 @@ def get_arguments() -> Namespace:
     return args
 
 
-# TODO: Read over docstring/comment
 # TODO: Check out annotation for return type/ type hints?
 # TODO: Fix so that connection from other clients is rejected and the first one continues
 # TODO: If send data fails, should it close or move to closing.

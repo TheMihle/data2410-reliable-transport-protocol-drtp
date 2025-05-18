@@ -157,7 +157,6 @@ class Client:
         FIN-ACK packet to confirm closing the connection. Ignores other flags. Exits if an error is raised.
         :param self: Variables of the object itself.
         """
-        # TODO: Times out when FIN-ACK is lost. what should happen if it times out?
         try:
             print("\nConnection Teardown:\n")
             # Send FIN packet
@@ -203,12 +202,10 @@ class Client:
         """
         try:
             self.establish_connection()
-
             self.send_data()
-
             self.close_connection()
-
             self.close_client()
+
         except KeyboardInterrupt:
             print("\nKeyboard interrupt detected, closing client")
             self.close_client()
