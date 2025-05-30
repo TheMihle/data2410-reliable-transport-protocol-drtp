@@ -10,7 +10,7 @@ from server import Server
 
 # Argument parsing
 # Custom types
-def range_check_int(min_int, max_int=None):
+def range_check_int(min_int: int, max_int: int = None):
     """
     Custom type for argparse. Checks if the input value is and int, and if it's
     between the minimum and optional maximum int provided.
@@ -19,9 +19,9 @@ def range_check_int(min_int, max_int=None):
     :return: Function that returns the valid int.
     :raises argparse ArgumentTypeError: If the value is out of range or not an int.
     """
-    def range_check(value) -> int:
+    def range_check(value: int | str) -> int:
         try:
-            integer = int(value)
+            integer: int = int(value)
         except ValueError:
             raise argparse.ArgumentTypeError(f"Integer expected, got {type(value)}")
 
@@ -31,7 +31,7 @@ def range_check_int(min_int, max_int=None):
     return range_check
 
 
-def ip_address(ip) -> str:
+def ip_address(ip: str) -> str:
     """
     Custom type for argparse. Checks if the input address is a valid IPv4 address.
     :param ip: IP address to be checked.
@@ -46,7 +46,7 @@ def ip_address(ip) -> str:
     return ip
 
 
-def file_name_check(file_name) -> str:
+def file_name_check(file_name: str) -> str:
     """
     Custom type for argparse. Check if the file exists and is readable if it's provided.
     Also checks if the file is a correct file format. (.jpg, .JPG, .jpeg, .JPEG)

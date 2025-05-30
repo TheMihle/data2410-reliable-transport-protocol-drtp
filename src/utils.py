@@ -23,7 +23,7 @@ class FileHandler:
     Has methods for reading from a file based on segment number and size and
     for writing to the end of a file.
     """
-    def __init__(self, file_name, segment_size=1000):
+    def __init__(self, file_name: str, segment_size: int = 1000):
         """
         Initialises the FileHandler with the specified file name and segment size.
 
@@ -37,7 +37,7 @@ class FileHandler:
         self.file = None
         self.segment_size = segment_size
 
-    def get_file_data(self, segment_num) -> bytes:
+    def get_file_data(self, segment_num: int) -> bytes:
         """
         Gets the file data with a specified size and number.
         Recommended to stick with one segment size.
@@ -45,7 +45,7 @@ class FileHandler:
         :raises UnsupportedOperation: If switching between reading and writing
                 data without closing first.
         """
-        position = (segment_num - 1) * self.segment_size
+        position: int = (segment_num - 1) * self.segment_size
 
         if self.file is None:
             self.file = open(self.file_name, "rb")
@@ -74,7 +74,7 @@ class FileHandler:
             self.file = None
 
 
-def create_packet(seq_num, ack_num, flags, window, data=None) -> bytes:
+def create_packet(seq_num: int, ack_num: int, flags: int, window: int, data: bytes = None) -> bytes:
     """
     Creates a packet based on the input parameters.
     :param seq_num: Seq number of the packet
@@ -84,7 +84,7 @@ def create_packet(seq_num, ack_num, flags, window, data=None) -> bytes:
     :param data: The data that should be sent in the packet, if not provided,
                 the packet will be empty. Must be in bytes.
     """
-    header_format = "!HHHH"
+    header_format: str = "!HHHH"
     packet = pack(header_format, seq_num, ack_num, flags, window)
 
     if data is not None:
@@ -92,17 +92,17 @@ def create_packet(seq_num, ack_num, flags, window, data=None) -> bytes:
     return packet
 
 
-def parse_packet(packet) -> tuple[int, int, int, int, bytes]:
+def parse_packet(packet: bytes) -> tuple[int, int, int, int, bytes]:
     """
     Parses the packet and returns the header information and data
     :param packet: The packet that should be parsed
     :return: Tuple with seq_num, ack_num, flags, window, data
     """
-    header_format = "!HHHH"
-    header_size = calcsize(header_format)
-    data = packet[header_size:]
-    packet = unpack(header_format, packet[:header_size])
-    return *packet, data
+    header_format: str = "!HHHH"
+    header_size: int = calcsize(header_format)
+    data: bytes = packet[header_size:]
+    header_data: tuple = unpack(header_format, packet[:header_size])
+    return *header_data, data
 
 
 def time_now_log() -> str:

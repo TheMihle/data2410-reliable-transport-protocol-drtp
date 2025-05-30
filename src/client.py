@@ -1,7 +1,6 @@
 import sys
 from socket import *
 from utils import *
-from time import sleep
 
 
 class Client:
@@ -12,7 +11,7 @@ class Client:
     # Constants
     TIMEOUT = 0.4
 
-    def __init__(self, server_ip, server_port, sender_window, file_name):
+    def __init__(self, server_ip: str, server_port: int, sender_window: int, file_name: str):
         """
         Initialises the client. Connects to the server with the specified IP and port.
         Uses Go-Back-N strategy. Closes connection when the transfer is complete.
@@ -22,10 +21,10 @@ class Client:
         :param sender_window: The Maximum size of the sliding window the sender should send.
         :param file_name: Name of the file that should be transferred.
         """
-        self.server_address = (server_ip, server_port)
+        self.server_address: tuple[str, int] = (server_ip, server_port)
         self.socket = socket(AF_INET, SOCK_DGRAM)
         self.file_handler = FileHandler(file_name, 992)
-        self.window_size = sender_window
+        self.window_size: int = sender_window
 
     def establish_connection(self) -> None:
         """
@@ -66,7 +65,7 @@ class Client:
             print(f"\nUnexpected error: {e}")
             self.close_client(1)
 
-    def send_window(self, window, retransmission=False) -> None:
+    def send_window(self, window: range, retransmission: bool = False) -> None:
         """
         Sends all packets in the specified window. Can specify if its retransmission, makes a different console message.
         :param self: Variables of the object itself.
@@ -74,15 +73,15 @@ class Client:
         :param retransmission: Set True if it's a retransmission. Changes the console output.
         :raises ConnectionError: If the server refuses the packet.
         """
-        if retransmission: tran_type = "retransmitted"
-        else:  tran_type = "sent"
-        sent_window = []
+        if retransmission: tran_type: str = "retransmitted"
+        else:  tran_type: str = "sent"
+        sent_window: list[int] = []
         for seq_num in window:
             self.socket.sendto(create_packet(seq_num, 0, 0, 0, self.file_handler.get_file_data(seq_num)), self.server_address)
             sent_window.append(seq_num)
             print(f"{time_now_log()} packet with seq = {seq_num} is {tran_type}, sliding window = {sent_window}")
 
-    def send_data(self, start_seq_num=1) -> None:
+    def send_data(self, start_seq_num: int = 1) -> None:
         """
         Sends the file to the receiver using the Go-Back-N strategy. Sends the whole window, then listens
         for ACKs and sends the next packet in the window. If no ACKs arrive, retransmits the window.
@@ -90,10 +89,10 @@ class Client:
         :param self: Variables of the object itself.
         :param start_seq_num: Sequence number that the transfer should start on. Default is 1.
         """
-        next_ack = start_seq_num
-        last_data_packet = float("inf")      # Temp value just so it compares true with an int
-        last_retrans_num = 0
-        retrans_attempts = 0
+        next_ack: int = start_seq_num
+        last_data_packet: int | float("inf") = float("inf")      # Temp value just so it compares true with an int
+        last_retrans_num: int = 0
+        retrans_attempts: int = 0
 
         try:
             self.send_window(range(next_ack , next_ack + self.window_size))
@@ -108,7 +107,7 @@ class Client:
                         print(f"{time_now_log()} ACK for packet = {ack_num} is received")
                         next_ack += 1
                         next_seq_num = next_ack + self.window_size - 1
-                        data = ""
+                        data = b""
 
                         # Check if the last data packet has been found.
                         if last_data_packet == float('inf'):
@@ -181,7 +180,7 @@ class Client:
             print(f"\nUnexpected error: {e}")
             self.close_client(1)
 
-    def close_client(self, exit_code=0) -> None:
+    def close_client(self, exit_code: int = 0) -> None:
         """
         Closes the client's file handler and socket before exiting the client.
         :param self: Variables of the object itself.

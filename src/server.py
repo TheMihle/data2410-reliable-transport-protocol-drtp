@@ -11,10 +11,10 @@ class Server:
     Accepts Go-Back-N strategy. Closes connection on the client's request.
     """
     # Constants
-    TIMEOUT = 2
-    RECEIVER_WINDOW = 15
+    TIMEOUT: int = 2
+    RECEIVER_WINDOW: int = 15
 
-    def __init__(self, server_ip, server_port, discard_packet):
+    def __init__(self, server_ip: str, server_port: int, discard_packet: int):
         """
         Initialises the server with the specified IP and port. Listens for incoming connections to accept a file.
         Accepts Go-Back-N strategy. Closes connection on the client's request.
@@ -23,13 +23,13 @@ class Server:
         :param server_port: Port number the server will listen to.
         :param discard_packet: Sequence number of the packet that should be discarded.
         """
-        self.server_address = (server_ip, server_port)
-        self.discard_packet = discard_packet
+        self.server_address: tuple[str, int] = (server_ip, server_port)
+        self.discard_packet: int = discard_packet
         self.socket = socket(AF_INET, SOCK_DGRAM)
         # So that the file name probably will be unique if run multiple times
         self.file_handler = FileHandler(f"received_img_{randint(1, 99999999)}.jpg")
-        self.data_start_time = None
-        self.cumulative_data = 0
+        self.data_start_time: float | None = None
+        self.cumulative_data: int = 0
 
     def establish_connection(self) -> None:
         """
@@ -75,7 +75,7 @@ class Server:
             print(f"\nUnexpected error: {e}")
             self.exit_server(1)
 
-    def accept_data(self, start_seq_num=1) -> None:
+    def accept_data(self, start_seq_num: int = 1) -> None:
         """
         Listens and accepts incoming data packets. Checks of they arrive in the correct order
         and respond with ACK if it does. Starts closing the connection when FIN packet is received.
@@ -83,7 +83,7 @@ class Server:
         :param self: Variables of the object itself.
         :param start_seq_num: Sequence number that the transfer should start on. Default is 1.
         """
-        next_seq_num = start_seq_num
+        next_seq_num: int = start_seq_num
         self.data_start_time = time()   # For throughput calculation
 
         try:
@@ -124,7 +124,7 @@ class Server:
             print(f"\nUnexpected error: {e}")
             self.exit_server(1)
 
-    def close_connection(self, client_address) -> None:
+    def close_connection(self, client_address: tuple[str, int]) -> None:
         """
         Finishes closing the connection by responding with a FIN-ACK packet.
         Calculates and outputs the throughput. Exits if an error is raised.
@@ -145,7 +145,7 @@ class Server:
         print(f"\nThe throughput was {format(throughput, ".2f")} Mbps\n"
               "Connection Closed\n")
 
-    def exit_server(self, exit_code=0) -> None:
+    def exit_server(self, exit_code: int = 0) -> None:
         """
         Closes the server's file handler and socket before exiting the server.
         :param self: Variables of the object itself.
