@@ -1,6 +1,6 @@
 # DRTP: DATA2410 Reliable Transport Protocol
 ## Home Exam
-### Grade archived: A
+### Grade: A
 
 ## Overview
 This application was developed as the home exam of the DATA2410 Networking and cloud computing course. 
